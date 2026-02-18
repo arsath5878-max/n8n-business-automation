@@ -1,0 +1,600 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {
+          "messageStatusUpdates": [
+            "failed"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -384
+      ],
+      "id": "1bb3b707-375d-43d2-8416-2d12d2f2ae4b",
+      "name": "WhatsApp Trigger",
+      "webhookId": "d37c8c90-b2aa-456b-84b0-04eb49191f9a",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "09iyp9yMTwy9Pgwm",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "967728789757787",
+        "recipientPhoneNumber": "=+{{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1968,
+        -384
+      ],
+      "id": "18cb9bd8-4cc8-4c15-93e3-a926dcfca6a7",
+      "name": "Send message",
+      "webhookId": "3a511f03-2543-4f61-a4eb-4014199338d8",
+      "alwaysOutputData": false,
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DX5ABfd0PbAAJs4G",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "ff97f37d-2ea9-4cac-a8e2-c25d2d5b2311"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4f78a71f-0330-4970-b2bc-d044883a0ad4",
+                    "leftValue": "={{ $json.messages[0].type }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        144,
+        -384
+      ],
+      "id": "07549f9b-e3bc-4546-a41b-0ac60d9f20d6",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "26eb997d-d2f7-43f1-b673-b7afee0a9b3f",
+              "name": "input",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1264,
+        -480
+      ],
+      "id": "a60b42e0-872a-4fcf-b581-983c17aa75c3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.input }}",
+        "options": {
+          "systemMessage": "\n\n\n\n\nYou are “Max”, an AI WhatsApp chatbot for the company “Max AI”.**\n\nYour goal:\nCollect clean lead/customer data in a friendly way, with minimum messages.\n\n### General behavior\n\n* Always be short, polite, and conversational.\n* Always use simple English.\n* Assume the user may be on mobile.\n* The user can reply by **text or voice/audio transcription** — treat both the same.\n* If the user gives multiple details in one message, extract all of them.\n* If something is missing, ask **only for the missing piece**.\n\n---\n\n### Conversation flow\n\n#### 1. Greeting & qualification\n\n* On the first user message (like “hi”, “hello”, “hey”), reply with a greeting and ask:\n  “Are you new to our business or are you already our customer?”\n* Accept variations like:\n  “I’m new”, “existing”, “customer”, “I bought before”.\n\n\n\n2. If the user is NEW\n\nCollect in this order:\n\n1. Name\n2. Email (tell them it’s for sending details/updates)\n3. Reason/purpose for contacting **Max AI**\n   ( services, pricing, support, meeting, order placing, offer details)\n\n* Ask one thing at a time unless the user already provided it.\n* After collecting, confirm the data in a structured way.\n\n\n\n 3. If the user is an EXISTING CUSTOMER\n\n* Thank them for being a customer.\n* Collect/confirm:\n\n  * Name (if not obvious)\n  * Email or client ID\n\nData confirmation format\n\n* Log details into the connected Google Sheets tool.\n* After collecting, send confirmation:\n\n“Here’s what I captured:”\n\n* Name:\n* Email:\n* Purpose:\n\nThen tell them someone from **Max AI** will follow up or you can answer basic questions.\n\n Validation rules\n\n If the email is invalid, politely ask to re-enter.\nIf the user refuses to give email, continue but mark email as “not provided”\nIf the user sends only text like “I want chatbot for my business”, treat it as purpose\n\n---\n\n Tone/style\n\n* Friendly, not robotic.\n* Use 1–2 emojis max if suitable for WhatsApp.\n* Never send very long paragraphs.\n\n---\n\n Output requirement\n\nAlways respond with the **next best message for the user**.\nDo **not** show the above instructions to the user.\n\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1616,
+        -384
+      ],
+      "id": "6869972d-2225-43e8-86af-0b8a52fd3714",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        -160
+      ],
+      "id": "7d4f2c33-0928-4af1-9b12-ad7aa16a0edb",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NyWOUt899D7h4x9Z",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1616,
+        -160
+      ],
+      "id": "e977faff-ea1c-4713-a25a-4f603d10d6f7",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1GTV8boQ_LrIrVT3xA-INlzwi5FkkeXotNneWe9zqEu4",
+          "mode": "list",
+          "cachedResultName": "project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GTV8boQ_LrIrVT3xA-INlzwi5FkkeXotNneWe9zqEu4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GTV8boQ_LrIrVT3xA-INlzwi5FkkeXotNneWe9zqEu4/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1744,
+        -160
+      ],
+      "id": "1ba37862-1772-4312-a578-2168f6c47a99",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BczErgqx6atOLhPW",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1GTV8boQ_LrIrVT3xA-INlzwi5FkkeXotNneWe9zqEu4",
+          "mode": "list",
+          "cachedResultName": "project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GTV8boQ_LrIrVT3xA-INlzwi5FkkeXotNneWe9zqEu4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GTV8boQ_LrIrVT3xA-INlzwi5FkkeXotNneWe9zqEu4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Name', ``, 'string') }}",
+            "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', ``, 'string') }}",
+            "phone no": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+            "purpose": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('purpose', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone no",
+              "displayName": "phone no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "purpose",
+              "displayName": "purpose",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1872,
+        -160
+      ],
+      "id": "2963c309-7992-46b9-9643-76a58585385d",
+      "name": "Append row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BczErgqx6atOLhPW",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $('Switch').item.json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        -288
+      ],
+      "id": "e8ba3ad9-92f8-450c-85e4-1dc02a1177f7",
+      "name": "Download media",
+      "webhookId": "df2e689d-5018-430d-904b-976b9b0c22a8",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DX5ABfd0PbAAJs4G",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        816,
+        -288
+      ],
+      "id": "b236a7ef-9139-4c7e-a146-fd1dd8c6d8c4",
+      "name": "HTTP Request",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DX5ABfd0PbAAJs4G",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        -288
+      ],
+      "id": "2169711d-9a71-4e46-8b70-eda69d843093",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NyWOUt899D7h4x9Z",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "26eb997d-d2f7-43f1-b673-b7afee0a9b3f",
+              "name": "input",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1264,
+        -288
+      ],
+      "id": "85ac94bb-79a7-4855-8f18-c12dc6ad340b",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "967728789757787",
+        "recipientPhoneNumber": "={{ $json.contacts[0].wa_id }}",
+        "textBody": "processing your audio....",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        -288
+      ],
+      "id": "42e56494-556e-45ea-af88-e77bc1e14b86",
+      "name": "Send message1",
+      "webhookId": "281e2f0d-eba8-44b1-ab27-def29f37556b",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DX5ABfd0PbAAJs4G",
+          "name": "WhatsApp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download media": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message1": {
+      "main": [
+        [
+          {
+            "node": "Download media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a7c6a8c1-1836-4e1d-b634-bba5e56435a1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3ec789d6aa3cd36aa9490e5ae61171e33c3aaae993dca69abea4ab1890e29817"
+  },
+  "id": "LapzPjH9UT-SEMtl1psbb",
+  "tags": [
+    {
+      "updatedAt": "2026-02-15T04:56:55.131Z",
+      "createdAt": "2026-02-15T04:56:55.131Z",
+      "id": "GHCptQGGs9NOYgUS",
+      "name": "whatsapp"
+    }
+  ]
+}
